@@ -1,0 +1,153 @@
+## 语法糖
+
+### 类擦除
+
+#### 类型擦除的基本概念
+
+在 Java 中，泛型是在编译时引入的，编译器会根据泛型参数的类型进行检查，但在运行时，所有的泛型信息都会被擦除，转变为原始类型。这意味着，在运行时，泛型的具体类型不再可用，所有泛型类和接口的实例都将被转换为其原始类型。
+
+#### 类型擦除的过程
+
+##### 1.原始类型替换
+
+在泛型类和接口的实现中，所有的泛型参数都被替换为它们的原始类型。例如，`List<T>` 会被替换为 `List`，`Map<K, V>` 会被替换为 `Map`。这是类型擦除的基本步骤。
+
+##### 2.边界类型的处理
+
+如果泛型参数有边界限制，比如 `T extends Number`，在擦除过程中，编译器会将其替换为边界类型的原始类型。例如，`List<T extends Number>` 会被替换为 `List<Number>`。如果没有边界限制，则会替换为 `Object`。
+
+```java
+public class Box<T> {
+    private T value;
+}
+```
+
+上述代码在类型擦除后，会变为：
+
+```java
+public class Box {
+    private Object value; // T 被替换为 Object
+}
+```
+
+##### 3.类型检查和强制转换
+
+编译器会在泛型使用的位置添加强制类型转换，以确保类型安全。例如，在泛型方法中，编译器会检查类型并添加相应的强制转换。
+
+```java
+public <T> void add(T element) {
+    list.add(element); // 在运行时会添加强制转换
+}
+```
+
+擦除后可能变为：
+
+```java
+public void add(Object element) {
+    list.add(element); // 需要保证 list 的元素类型是正确的
+}
+```
+
+#### 类型擦除的影响
+
+##### 1.限制
+
+- **不能使用 `instanceof `检查泛型类型**：由于泛型信息在运行时不可用，不能使用 `instanceof` 操作符来检查泛型类型。
+
+```java
+if (element instanceof T) { // 这会导致编译错误
+    // ...
+}
+```
+
+- **不能创建泛型数组**：因为类型在运行时不可用，所以不能创建泛型数组。
+
+```java
+T[] array = new T[10]; // 编译错误
+```
+
+##### 2.反映在字节码中
+
+使用 `javap` 工具可以查看编译后生成的字节码，验证类型擦除的过程。例如，对于一个简单的泛型类：
+
+```java
+public class Box<T> {
+    private T value;
+    
+    public void setValue(T value) {
+        this.value = value;
+    }
+}
+```
+
+生成的字节码中会看到 `T` 被替换为 `Object`。
+
+#### 总结
+
+- Java 的类型擦除机制是为了兼容性和向后兼容性，使得泛型能够与非泛型的代码共存。
+- 在编译期间，泛型参数会被替换为其原始类型，而所有与泛型相关的类型信息在运行时不可用。
+- 类型擦除提供了类型安全性，但也带来了一些限制，如无法使用 `instanceof` 检查泛型类型和创建泛型数组。
+
+### `Enum`
+
+<img src="D:\测试开发\笔记\Java基础\pic\1.png" style="zoom: 80%;" />
+
+`enum`类型本质上是语法糖，我们来看看反编译的结果：
+
+```java
+public enum t {
+    SPRING,SUMMER;
+}
+```
+
+```java
+public final class T extends Enum
+{
+    private T(String s, int i)
+    {
+        super(s, i);
+    }
+    public static T[] values()
+    {
+        T at[];
+        int i;
+        T at1[];
+        System.arraycopy(at = ENUM$VALUES, 0, at1 = new T[i = at.length], 0, i);
+        return at1;
+    }
+
+    public static T valueOf(String s)
+    {
+        return (T)Enum.valueOf(demo/T, s);
+    }
+
+    public static final T SPRING;
+    public static final T SUMMER;
+    private static final T ENUM$VALUES[];
+    static
+    {
+        SPRING = new T("SPRING", 0);
+        SUMMER = new T("SUMMER", 1);
+        ENUM$VALUES = (new T[] {
+            SPRING, SUMMER
+        });
+    }
+}
+```
+
+我们重点来看看`valueOf`方法的源码
+
+```java
+    public static <T extends Enum<T>> T valueOf(Class<T> enumClass, String name) {
+        T result = (Enum)enumClass.enumConstantDirectory().get(name);
+        if (result != null) {
+            return result;
+        } else if (name == null) {
+            throw new NullPointerException("Name is null");
+        } else {
+            throw new IllegalArgumentException("No enum constant " + enumClass.getCanonicalName() + "." + name);
+        }
+    }
+```
+
+## Object类
