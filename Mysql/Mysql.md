@@ -2,6 +2,34 @@
 
 https://javaguide.cn/database/mysql/
 
+### sql语句的执行顺序
+
+![image-20240820114027032](https://cdn.xiaolincoding.com//picgo/image-20240820114027032.png)
+
+#### 示例
+
+假设我们有一张 `sales` 表，包含 `product_id`、`sale_date` 和 `quantity` 列，我们要查询每种商品总销售量大于 100 的数据，并按总销售量降序排列前 5 名：
+
+```sql
+SELECT product_id, SUM(quantity) AS total_quantity
+FROM sales
+WHERE sale_date >= '2024-01-01'
+GROUP BY product_id
+HAVING total_quantity > 100
+ORDER BY total_quantity DESC
+LIMIT 5;
+```
+
+**执行过程**
+
+1. **FROM**：读取 `sales` 表。
+2. **WHERE**：过滤出 `sale_date >= '2024-01-01'` 的记录。
+3. **GROUP BY**：按 `product_id` 对过滤后的记录进行分组。
+4. **SELECT**：计算每个分组的 `SUM(quantity)`，并命名为 `total_quantity`。
+5. **HAVING**：筛选出 `total_quantity > 100` 的分组。
+6. **ORDER BY**：按 `total_quantity` 降序排序。
+7. **LIMIT**：截取前 5 行。
+
 ## 存储引擎
 
 **事务支持**
