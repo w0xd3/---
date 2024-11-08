@@ -1,11 +1,41 @@
+# 正文
+
+## Monkey Test
+
+一种自动化软件测试方法，通常用于发现应用程序中的潜在错误和崩溃问题。其基本思路是通过模拟随机、无序的操作来测试应用程序，以便发现异常或未处理的错误。这个名字来源于“猴子”这一形象，意味着不受控、不可预测的操作，就像让一只猴子随机点击屏幕一样。
+
+#### 为什么要进行Monkey Test
+
+由于多种编辑操作只调用一次接口，Monkey Test 可以通过随机化的操作模拟用户行为，从而发现哪个具体的操作导致 JSON 配置项出错。这种随机测试能够有效捕捉到那些在常规测试中可能遗漏的异常情况，有助于提高接口的稳定性和错误处理能力。
+
+近期线上频发前端造成的切片失败报错（传递了错误的配置项），我在测试时也发现一例这样的情况，但复现难度十分大。因此Lithophane项目适合使用Monkey Test进行测试。
+
+#### 流程
+
+>创建项目
+>
+>随机操作（指定随机次数）
+>
+>删除项目
+
+#### 初步设计
+
+- **YAML 配置模块**：负责读取和解析 YAML 文件，返回对应的 XPATH 元素。
+- **随机选择模块**：负责从轮盘中随机选择操作组件。
+- **操作执行模块**：执行随机选择的操作并处理结果。
+- **日志模块**：负责日志记录，包括成功和失败的信息。
+- **Gif模块：**将每一步随机操作截屏，组成gif并保存。
+
+# 草稿
+
 我打算写一个monkey test框架。初步预计需要1、将元素与XPATH写成yaml文件对应，方便后续XPATH变动，不用修改源代码；2、进行随机测试的组件封装成字典的形式，键为元素实例、元素需要进行的操作、元素名；3、将随机测试组件加入到轮盘（数组）中；4、选择随机操作组件，进行字典中元素需要进行的操作，并将元素名加入到操作队列中；5、若最后运行成功，则执行删除逻辑，并清空操作队列内容，将日期和成功输出到log文件。若失败，则执行保留逻辑，将日期和操作队列和失败输出到log文件中。
 
 ### 1. XPATH与元素对应的YAML文件
 
 使用YAML文件存储元素与其XPATH的对应关系，方便后续维护和变更。
 
-```
-yaml复制代码elements:
+```yaml
+elements:
   login_button: '//*[@id="login-btn"]'
   submit_button: '//*[@id="submit-btn"]'
   upload_input: '//*[@id="temp-upload-btn"]'
@@ -15,8 +45,8 @@ yaml复制代码elements:
 
 创建一个字典，存放元素实例、操作及其名称。
 
-```
-python复制代码test_components = {
+```python
+test_components = {
     'login': {
         'element': driver.find_element(By.XPATH, '//*[@id="login-btn"]'),
         'action': 'click',
@@ -39,8 +69,8 @@ python复制代码test_components = {
 
 使用数组存储可随机选择的组件。
 
-```
-python复制代码import random
+```python
+import random
 
 roulette = list(test_components.keys())
 ```
@@ -49,8 +79,8 @@ roulette = list(test_components.keys())
 
 选择随机操作，并执行对应的动作。
 
-```
-python复制代码selected_action = random.choice(roulette)
+```python
+selected_action = random.choice(roulette)
 component = test_components[selected_action]
 
 if component['action'] == 'click':
@@ -63,8 +93,8 @@ elif component['action'] == 'upload':
 
 记录操作成功或失败，并将结果输出到log文件中。
 
-```
-python复制代码import logging
+```python
+import logging
 from datetime import datetime
 
 # 配置日志
@@ -117,7 +147,7 @@ except Exception as e:
 ### 3.1 整体架构
 
 ```
-plaintext复制代码+--------------------------+
++--------------------------+
 |      Monkey Test 框架   |
 +--------------------------+
 |  YAML 配置模块          |
@@ -140,8 +170,8 @@ plaintext复制代码+--------------------------+
 
 - 字典结构：
 
-  ```
-  python复制代码{
+  ```python
+  {
       "element_instance": "元素实例",
       "operation": "操作名称",
       "element_name": "元素名"
@@ -152,12 +182,10 @@ plaintext复制代码+--------------------------+
 
 - **随机选择算法**：使用随机数生成器从轮盘中选择操作。
 
-- 日志记录逻辑
-
-  ：
+- 日志记录逻辑：
 
   - 成功时记录操作队列内容和时间戳。
-  - 失败时记录失败原因和当前操作队列。
+- 失败时记录失败原因和当前操作队列。
 
 ## 5. 实现计划
 
