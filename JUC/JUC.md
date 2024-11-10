@@ -115,50 +115,6 @@ public class Singleton {
 - **每个对象都有一个锁**：每个 Java 对象都有一个监视器锁，使用 `synchronized` 时会获取这个锁。
 - **JVM 的调度**：当一个线程尝试获取一个已经被其他线程占用的锁时，它将被阻塞，直到锁被释放。
 
-### 示例代码
-
-```java
-public class SynchronizedExample {
-    private int counter = 0;
-
-    public synchronized void increment() {
-        counter++;
-    }
-
-    public synchronized int getCounter() {
-        return counter;
-    }
-
-    public static void main(String[] args) {
-        SynchronizedExample example = new SynchronizedExample();
-        
-        Thread thread1 = new Thread(() -> {
-            for (int i = 0; i < 1000; i++) {
-                example.increment();
-            }
-        });
-
-        Thread thread2 = new Thread(() -> {
-            for (int i = 0; i < 1000; i++) {
-                example.increment();
-            }
-        });
-
-        thread1.start();
-        thread2.start();
-
-        try {
-            thread1.join();
-            thread2.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        System.out.println("Final counter value: " + example.getCounter());
-    }
-}
-```
-
 #### 优点：
 
 - 简单易用，代码可读性好。
@@ -291,3 +247,47 @@ public class CASExample {
 - 线程挂起和恢复
 
 [Java 魔法类 Unsafe 详解 | JavaGuide](https://javaguide.cn/java/basis/unsafe.html#线程调度)
+
+### 线程池
+
+#### 为什么要使用线程池
+
+1. **降低资源消耗**。通过重复利用已创建的线程降低线程创建和销毁造成的消耗。
+2. **提高响应速度**。当任务到达时，任务可以不需要等到线程创建就能立即执行。
+3. **提高线程的可管理性**。线程是稀缺资源，如果无限制的创建，不仅会消耗系统资源，还会降低系统的稳定性，使用线程池可以进行统一的分配，调优和监控。
+
+#### 如何创建
+
+1. 通过`ThreadPoolExecutor`构造函数创建
+   - 核心参数：
+     - `corePoolSize` : 任务队列未达到队列容量时，最大可以同时运行的线程数量。
+     - `maximumPoolSize` : 任务队列中存放的任务达到队列容量的时候，当前可以同时运行的线程数量变为最大线程数。
+     - `workQueue`: 新任务来的时候会先判断当前运行的线程数量是否达到核心线程数，如果达到的话，新任务就会被存放在队列中。
+   - 其他参数：
+     - `keepAliveTime`:当线程池中的线程数量大于 `corePoolSize` ，即有非核心线程（线程池中核心线程以外的线程）时，这些非核心线程空闲后不会立即销毁，而是会等待，直到等待的时间超过了 `keepAliveTime`才会被回收销毁。
+     - `unit` : `keepAliveTime` 参数的时间单位。
+     - `threadFactory` :executor 创建新线程的时候会用到。
+     - `handler` :拒绝策略（后面会单独详细介绍一下）。
+2. 通过`Executor`框架的工具类`Executors`来创建
+
+**为什么不使用`Executors`?**
+
+1. 不灵活
+2. 使用不当可能导致使用的阻塞队列有界，从而触发OOM
+
+#### 线程池处理任务的流程
+
+![图解线程池实现原理](https://oss.javaguide.cn/github/javaguide/java/concurrent/thread-pool-principle.png)
+
+1. 如果当前运行的线程数小于核心线程数，那么就会新建一个线程来执行任务。
+2. 如果当前运行的线程数等于或大于核心线程数，但是小于最大线程数，那么就把该任务放入到任务队列里等待执行。
+3. 如果向任务队列投放任务失败（任务队列已经满了），但是当前运行的线程数是小于最大线程数的，就新建一个线程来执行任务。
+4. 如果当前运行的线程数已经等同于最大线程数了，新建线程将会使当前运行的线程超出最大线程数，那么当前任务会被拒绝，拒绝策略会调用`RejectedExecutionHandler.rejectedExecution()`方法。
+
+#### 线程池的缺点
+
+1. 需要合理配置：线程池的性能和效果受到配置参数的影响，需要根据具体的应用场景和硬件环境来合理配置线程池的大小、任务队列的大小等参数。
+
+2. 可能引发资源泄露：如果线程池中的线程长时间闲置而不被使用，可能会导致资源的浪费和泄露。
+3. 可能引发死锁：在使用线程池时，如果任务之间存在依赖关系，可能会引发死锁问题，需要额外的注意和处理。
+

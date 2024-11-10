@@ -1,3 +1,50 @@
+### 内存区域
+
+**程序计数器 (Program Counter Register)**
+
+- 每个线程拥有一个独立的程序计数器，用于记录当前线程执行的字节码指令的地址。
+- 如果线程正在执行本地方法，则计数器值为空。
+- 程序计数器用于帮助线程在执行Java字节码时进行指令跳转和分支。
+
+**Java虚拟机栈 (Java Virtual Machine Stack)**
+
+- JVM栈是线程私有的，生命周期与线程相同。
+- 每个方法在执行时都会创建一个栈帧（Stack Frame）用于存储局部变量表、操作数栈、方法出口等信息。
+- JVM栈的作用是支持方法的调用和执行，Java中的方法调用和返回都通过栈进行管理。
+- 当栈深度过深或栈内存不足时，会抛出`StackOverflowError`或`OutOfMemoryError`。
+
+**本地方法栈 (Native Method Stack)**
+
+- 用于执行本地方法（Native Method）时的数据存储。
+- 本地方法是由其他编程语言（如C或C++）实现的代码，这些代码通过JNI调用。
+- 类似于JVM栈，本地方法栈也会因为内存不足抛出异常。
+
+**堆 (Heap)**
+
+- 堆是线程共享的内存区域，用于存储Java对象和数组。
+- 堆在JVM启动时创建，生命周期与JVM相同。
+- 所有对象实例和数组都在堆中分配，是Java垃圾回收机制（GC）管理的主要区域。
+- 堆可以细分为新生代（Young Generation）和老年代（Old Generation），其中新生代又包括Eden区和Survivor区，用于存储不同生命周期的对象。
+
+**方法区 (Method Area)**
+
+- 方法区是线程共享的内存区域，用于存储类信息、常量、静态变量和JIT（Just-In-Time）编译后的代码。
+- 方法区是“逻辑上”堆的一部分，有时也称为“非堆”。
+- 在HotSpot虚拟机中，方法区对应了“永久代”或“元空间”（JDK 8后为元空间）。
+- 方法区会因为内存不足抛出`OutOfMemoryError`异常。
+
+**运行时常量池 (Runtime Constant Pool)**
+
+- 运行时常量池是方法区的一部分，用于存储编译期间生成的各种字面量（Literal）和符号引用（Symbolic Reference）。
+- 常量池在类加载后被载入方法区中，可以在运行时动态添加新的常量。
+- 运行时常量池的内存也受到限制，当常量池内存不足时会抛出`OutOfMemoryError`异常。
+
+**直接内存 (Direct Memory)**
+
+- 直接内存并不是JVM运行时数据区的一部分，但在JVM外部也可能被Java程序使用，如NIO（New I/O）中的`ByteBuffer.allocateDirect`方法分配的内存。
+- 直接内存分配由操作系统管理，可以显著提升I/O操作的性能。
+- 直接内存大小可以通过JVM参数`-XX:MaxDirectMemorySize`配置，默认与堆内存大小相同。
+
 ### 类加载详解
 
 #### 类的生命周期

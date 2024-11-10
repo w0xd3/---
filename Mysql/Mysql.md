@@ -6,31 +6,23 @@ https://javaguide.cn/database/mysql/
 
 ![image-20240820114027032](https://cdn.xiaolincoding.com//picgo/image-20240820114027032.png)
 
-#### 示例
+#### sql语句的执行过程
 
-假设我们有一张 `sales` 表，包含 `product_id`、`sale_date` 和 `quantity` 列，我们要查询每种商品总销售量大于 100 的数据，并按总销售量降序排列前 5 名：
+![img](https://oss.javaguide.cn/javaguide/13526879-3037b144ed09eb88.png)
 
-```sql
-SELECT product_id, SUM(quantity) AS total_quantity
-FROM sales
-WHERE sale_date >= '2024-01-01'
-GROUP BY product_id
-HAVING total_quantity > 100
-ORDER BY total_quantity DESC
-LIMIT 5;
-```
+**连接器：** 身份认证和权限相关(登录 MySQL 的时候)。
 
-**执行过程**
+**查询缓存：** 执行查询语句的时候，会先查询缓存（MySQL 8.0 版本后移除，因为这个功能不太实用）。
 
-1. **FROM**：读取 `sales` 表。
-2. **WHERE**：过滤出 `sale_date >= '2024-01-01'` 的记录。
-3. **GROUP BY**：按 `product_id` 对过滤后的记录进行分组。
-4. **SELECT**：计算每个分组的 `SUM(quantity)`，并命名为 `total_quantity`。
-5. **HAVING**：筛选出 `total_quantity > 100` 的分组。
-6. **ORDER BY**：按 `total_quantity` 降序排序。
-7. **LIMIT**：截取前 5 行。
+**分析器：** 没有命中缓存的话，SQL 语句就会经过分析器，分析器说白了就是要先看你的 SQL 语句要干嘛，再检查你的 SQL 语句语法是否正确。
+
+**优化器：** 按照 MySQL 认为最优的方案去执行。
+
+**执行器：** 执行语句，然后从存储引擎返回数据。 
 
 ## 存储引擎
+
+### MYISAM和InnoDB实现上的区别
 
 **事务支持**
 
@@ -56,6 +48,13 @@ LIMIT 5;
 
 - **MyISAM**：使用表级存储结构，数据和索引分别存储在不同的文件中。表比较大时，性能可能下降。
 - **InnoDB**：使用聚簇索引存储，数据与索引一起存储在同一个文件中，索引和数据一起优化存取效率。
+
+**MVCC**
+
+**索引实现**
+
+- **MyISAM**：叶子节点存储的是页数据的地址。
+- **InnoDB**：叶子节点存储的是主键的聚簇索引，即在数据本身建索引。
 
 ## 存储数据结构
 
@@ -113,20 +112,6 @@ LIMIT 5;
   - `Using temporary`: `MySQL` 需要使用临时表来存储中间结果，通常发生在 `GROUP BY`、`ORDER BY` 操作中，可能需要优化。
   - `Using filesort`: `MySQL` 使用文件排序，通常出现在 `ORDER BY` 子句，表示没有使用索引进行排序，可能影响性能。
   - `Using join buffer`: 使用了连接缓冲区，意味着连接条件可能不够优化。
-
-#### 案例
-
-假设有一个查询语句：
-
-```sql
-EXPLAIN SELECT * FROM employees WHERE dept_no = 'd001';
-```
-
-返回结果类似：
-
-| id   | select_type | table     | type | possible_keys | key     | key_len | ref   | rows | filtered | extra       |
-| ---- | ----------- | --------- | ---- | ------------- | ------- | ------- | ----- | ---- | -------- | ----------- |
-| 1    | SIMPLE      | employees | ref  | dept_no       | dept_no | 4       | const | 100  | 100      | Using where |
 
 ### 索引的类型
 
